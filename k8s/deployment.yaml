@@ -9,16 +9,16 @@ spec:
 
   selector:
     matchLabels:
-      app: hello
+      app: hello-app
 
   template:
     metadata:
       labels:
-        app: hello
+        app: hello-app
 
     spec:
       containers:
-      - name: hello-container
-        image: nginxdemos/hello
+      - name: hello-app
+        image: chimu15/hello-app:latest
         ports:
         - containerPort: 80
