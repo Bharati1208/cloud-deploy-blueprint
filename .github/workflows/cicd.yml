@@ -1,19 +1,22 @@
-name: Full CI/CD Pipeline
+name: Final CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
 
+env:
+  IMAGE_NAME: hello-app
+
 jobs:
 
-  build-and-push:
-
+  ci:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Checkout code
+    - name: Checkout source code
       uses: actions/checkout@v3
 
     - name: Login to Docker Hub
@@ -22,18 +25,18 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Image
+    - name: Build Docker image
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/hello-app:latest ./docker
 
-    - name: Push Image
+    - name: Push Docker image
       run: |
         docker push ${{ secrets.DOCKER_USERNAME }}/hello-app:latest
 
 
-  deploy:
-
-    needs: build-and-push
+  cd:
+    name: Deploy to Kubernetes
+    needs: ci
     runs-on: ubuntu-latest
 
     steps:
@@ -41,7 +44,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Deploy message
+    - name: Deployment Success Message
       run: |
-        echo "Image pushed successfully"
-        echo "Minikube will pull new image automatically"
+        echo "Docker image pushed successfully"
+        echo "Kubernetes will automatically pull latest image"
