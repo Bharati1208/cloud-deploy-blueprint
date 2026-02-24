@@ -1,0 +1,16 @@
+- name: Configure EC2 server
+  hosts: servers
+  become: yes
+
+  tasks:
+
+  - name: Enable nginx via amazon-linux-extras
+    shell: amazon-linux-extras install -y nginx1
+    args:
+      executable: /bin/bash
+
+  - name: Start and enable nginx
+    service:
+      name: nginx
+      state: started
+      enabled: yes
