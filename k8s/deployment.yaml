@@ -20,5 +20,6 @@ spec:
       containers:
       - name: hello-app
         image: chimu15/hello-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 80
