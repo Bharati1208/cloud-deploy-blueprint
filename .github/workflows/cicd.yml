@@ -1,4 +1,4 @@
-name: Full CI/CD Pipeline
+name: Full CI/CD Pipeline to AWS EKS
 
 on:
   push:
@@ -7,19 +7,23 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/hello-app
+  CLUSTER_NAME: my-cluster
+  AWS_REGION: us-east-1
+  DEPLOYMENT_NAME: hello-app
+  CONTAINER_NAME: hello-app
 
 jobs:
 
-  # ========================
-  # CI JOB
-  # ========================
+  # ================================
+  # CI JOB - Build and Push Docker Image
+  # ================================
   build-and-push:
 
     runs-on: ubuntu-latest
 
     steps:
 
-    - name: Checkout code
+    - name: Checkout source code
       uses: actions/checkout@v4
 
 
@@ -39,9 +43,9 @@ jobs:
 
 
 
-  # ========================
-  # CD JOB
-  # ========================
+  # ================================
+  # CD JOB - Deploy to AWS EKS
+  # ================================
   deploy:
 
     needs: build-and-push
@@ -50,33 +54,58 @@ jobs:
 
     steps:
 
-    - name: Checkout code
+    - name: Checkout source code
       uses: actions/checkout@v4
 
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
+    # Configure AWS credentials
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
 
+
+    # Install kubectl
+    - name: Install kubectl
+      uses: azure/setup-kubectl@v3
       with:
         version: latest
 
 
-    - name: Setup kubeconfig
+    # Connect to EKS cluster
+    - name: Update kubeconfig for EKS
       run: |
-        mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
+        aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
 
 
+    # Verify cluster connection
     - name: Verify cluster connection
       run: |
         kubectl get nodes
 
 
-    - name: Deploy new image to Kubernetes
+    # Deploy Kubernetes manifests (first time)
+    - name: Apply Kubernetes manifests
       run: |
-        kubectl set image deployment/hello-app hello-app=$DOCKER_IMAGE:${{ github.sha }}
+        kubectl apply -f k8s/
 
 
-    - name: Verify deployment rollout
+    # Update deployment with new image (rolling update)
+    - name: Update deployment image
       run: |
-        kubectl rollout status deployment/hello-app
+        kubectl set image deployment/$DEPLOYMENT_NAME \
+        $CONTAINER_NAME=$DOCKER_IMAGE:${{ github.sha }}
+
+
+    # Verify rollout
+    - name: Verify rollout status
+      run: |
+        kubectl rollout status deployment/$DEPLOYMENT_NAME
+
+
+    # Show pods
+    - name: Show running pods
+      run: |
+        kubectl get pods
