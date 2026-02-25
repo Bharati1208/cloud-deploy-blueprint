@@ -7,7 +7,7 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/hello-app
-  CLUSTER_NAME: my-cluster
+  CLUSTER_NAME: bharati-cluster
   AWS_REGION: us-east-1
   DEPLOYMENT_NAME: hello-app
   CONTAINER_NAME: hello-app
